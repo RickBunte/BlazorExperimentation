@@ -1,0 +1,51 @@
+﻿@page "/transmute-number"
+
+<h3>Transmute Number</h3>
+<input @bind="Model!.Name" />
+<input @bind="Model!.Number" />
+<button @onclick="Transmute">Transmute</button>
+
+@if (!string.IsNullOrEmpty(Model.Name))
+{
+    <span>Name: @Model.Name</span>
+    <span>Number: @Model.Number</span>
+}
+
+@if (transmutedNumber != 0)
+{
+    <span>
+        Resulting number: @transmutedNumber
+    </span>
+}
+
+
+@code {
+    @using BlazorExperimentation.Models.Models;
+    @using BlazorExperimentation.Web.Extensions;
+    @using System.Net.Http;
+
+    [SupplyParameterFromForm]
+    public TransmuteNumberModel? Model { get; set; }
+
+    [Inject]
+    private IJSRuntime jsRuntime { get; set; } = default!;
+
+    public double transmutedNumber = 0;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        Model = new();
+    }
+
+    private async Task Transmute()
+    {
+        var httpClient = new HttpClient();
+        var model = Model != null ? Model : new TransmuteNumberModel { Name = "Fallback", Number = 1 };
+        var response = await httpClient.PostAsJsonAsync("/api/numbers/transmute", model);
+        if (response.Content.ReadFromJsonAsync<TransmuteNumberResponseModel>().Result != null)
+        {
+            transmutedNumber = response.Content.ReadFromJsonAsync<TransmuteNumberResponseModel>().Result!.ResultNumber;
+        }
+    }
+}
